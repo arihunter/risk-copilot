@@ -307,9 +307,9 @@ def ChatInputCallback():
   st.session_state.thumbs = False
  
 @st.cache_data(show_spinner=False)
-async def get_response(query:str) -> str:
-	response = await agentLlama.chat(query)
-	return response
+def get_response(_query:str) -> str:
+	response = agentLlama.chat(_query)
+	return str(response)
 
 #Input
 global prompt
@@ -321,7 +321,7 @@ with st.form("Input Form",clear_on_submit = True):
 
 if submit:
 	with st.status("Generating your response") as status:
-		response = get_response(prompt)
+		response = get_response(str(prompt))
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
 	with placeholder.container():
