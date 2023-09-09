@@ -313,11 +313,13 @@ if prompt := st.chat_input("Enter Here",on_submit=ChatInputCallback):
 		response = get_response(prompt)
 		st.session_state.response = response
 		st.write(f'<i>{st.session_state.response}</i>',unsafe_allow_html=True)
-	
+
     if st.session_state.feedback == False:
       ThumbsUp = st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
+	
     if st.session_state.feedback == False:
       ThumbsDown = st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)
+      
 
 
 
