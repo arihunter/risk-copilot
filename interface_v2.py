@@ -33,7 +33,10 @@ st.divider()
 #initialisation of session state variables
 if "feedback" not in st.session_state.keys():
   st.session_state.feedback = False
-
+if "prompt" not in st.session_state.keys():
+  st.session_state.feedback = None
+ if "response" not in st.session_state.keys():
+  st.session_state.feedback = None
 
 dataset_keys = ["lms","credit-decisioning","collection","social-media"]
 for key in dataset_keys:
@@ -305,18 +308,18 @@ def get_response(query:str) -> str:
 #Input
 global prompt
 if prompt := st.chat_input("Enter here",on_submit=ChatInputCallback):
-	relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
+	st.session_state.prompt = prompt
 	with st.spinner("Thinking"):
 		response = get_response(prompt)
-		with relevantCol1:
-			placeholder = st.empty()
-			placeholder.markdown(str(response))
-		with relevantCol2:
-			if st.session_state.feedback == False:
-				ThumbsUp = st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
-		with relevantCol3:
-			if st.session_state.feedback == False:
-				ThumbsDown = st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)
+		st.session_state.response = response
+		st.write(f'<i>{st.session_state.response}</i>',unsafe_allow_html=True)
+	relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
+	with relevantCol2:
+		if st.session_state.feedback == False:
+			ThumbsUp = st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
+	with relevantCol3:
+		if st.session_state.feedback == False:
+			ThumbsDown = st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)
 
 
 
