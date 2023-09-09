@@ -34,10 +34,7 @@ st.divider()
 #initialisation of session state variables
 if "thumbs" not in st.session_state.keys():
 	st.session_state.thumbs = False
-if "prompt" not in st.session_state.keys():
-  st.session_state.feedback = None
-if "response" not in st.session_state.keys():
-  st.session_state.feedback = None
+
 
 dataset_keys = ["lms","credit-decisioning","collection","social-media"]
 for key in dataset_keys:
@@ -307,14 +304,17 @@ def get_response(query:str) -> str:
 
 #Input
 global prompt
-if prompt := st.text_area("Enter Here",on_change=ChatInputCallback):
-	st.session_state.prompt = prompt
+with st.form("Input Form"):
+	prompt = st.text_area("Enter Here")
+	submit = st.form_submit_button("Submit",on_click=ChatInputCallback,type="primary",use_container_width=True)
+
+if submit:
 	with st.status("Generating your response") as status:
 		response = get_response(prompt)
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
 	with placeholder.container():
-		st.write(f'<i>{response}</i>',unsafe_allow_html=True)
+		st.write(f'<font size="4">{response}</i>',unsafe_allow_html=True)
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		if (st.session_state.thumbs == False):
 			with relevantCol2:
