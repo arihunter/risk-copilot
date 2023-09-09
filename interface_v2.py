@@ -199,42 +199,38 @@ def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
   return grouped_df.to_string()
 
 
-# def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
-#   features = external_data_lms_df
-#   gbm = ensemble.GradientBoostingRegressor()
-#   gbm.fit(features,labels)
-#   feature_importance = gbm.feature_importances_
-#   score_with_idx = []
-#   for idx,score in enumerate(feature_importance):
-#     score_with_idx.append((score,idx))
-#   sortedFeatures = sorted(score_with_idx)
-#   sortedFeatures.reverse()
-#   #===presently taking top 10 features only=====
-#   sortedFeatures = sortedFeatures[:num_fts]
-#   sortedIdx = [x[1] for x in sortedFeatures]
-#   df_with_top_fts = features.iloc[:,sortedIdx]
-#   top_fts = list(df_with_top_fts.columns)
-#   return top_fts
+def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
+  features = external_data_lms_df
+  gbm = ensemble.GradientBoostingRegressor()
+  gbm.fit(features,labels)
+  feature_importance = gbm.feature_importances_
+  score_with_idx = []
+  for idx,score in enumerate(feature_importance):
+    score_with_idx.append((score,idx))
+  sortedFeatures = sorted(score_with_idx)
+  sortedFeatures.reverse()
+  #===presently taking top 10 features only=====
+  sortedFeatures = sortedFeatures[:num_fts]
+  sortedIdx = [x[1] for x in sortedFeatures]
+  df_with_top_fts = features.iloc[:,sortedIdx]
+  top_fts = list(df_with_top_fts.columns)
+  return top_fts
 
-# def evaluate_data_source():
-#   """
-#   This function is used to evaluate an external data source and test it's performance in predicting the behavior of a risk portfolio. 
-#   The external data source will have a number of input columns called features, and this function will calculate the most important or powerful features which can add most value in building my underwriting logics or risk model. 
-#   Here top_fts has a list of top 10 features.
-#   """
-#   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-#   external_data = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/social-media_data.csv")
-#   lms_df = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/lms_data.csv")
-#   external_data_lms_df = pd.merge(external_data, lms_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
-#   labels = external_data_lms_df["is_default"]
-#   external_data_lms_df.drop(["is_default"],axis=1,inplace=True)
-#   top_fts = calculate_feature_importance(external_data_lms_df,labels)
-#   risk_profiling_ft = "bureau_score"
-#   start_dt = loan_initiated_date.due_date.min
-#   end_dt = loan_initiated_date.due_date.max #for sake of simplicity start_dt and end_dt are taken to cover the full dataset. ideally the logic for date filtering should be more nuanced - to be added in future
-#   response = risk_profiling(start_dt, end_dt, risk_profiling_ft)
-#   #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
-#   return top_fts, response
+def evaluate_data_source():
+  """
+  This function is used to evaluate an external data source and test it's performance in predicting the behavior of a risk portfolio. 
+  The external data source will have a number of input columns called features, and this function will calculate the most important or powerful features which can add most value in building my underwriting logics or risk model. 
+  Here top_fts has a list of top 10 features.
+  """
+  #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
+  external_data = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/social-media_data.csv")
+  lms_df = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/lms_data.csv")
+  external_data_lms_df = pd.merge(external_data, lms_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
+  labels = external_data_lms_df["is_default"]
+  external_data_lms_df.drop(["is_default"],axis=1,inplace=True)
+  top_fts = calculate_feature_importance(external_data_lms_df,labels)
+  #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
+  return top_fts
 
 
 
@@ -311,7 +307,7 @@ def get_response(query:str) -> str:
 
 #Input
 global prompt
-if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
+if prompt := st.chat_input("Enter Here",on_submit=ChatInputCallback):
 	st.session_state.prompt = prompt
 	with st.status("Generating your response") as status:
 		response = get_response(prompt)
