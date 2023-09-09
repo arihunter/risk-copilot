@@ -309,10 +309,10 @@ def get_response(query:str) -> str:
 global prompt
 if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
-	with st.spinner("Thinking"):
-		placeholder = st.empty()
-		response = get_response(prompt)
-		with placeholder:
+	placeholder = st.empty()
+	with placeholder:
+		with st.spinner("Thinking"):
+			response = get_response(prompt)
 			st.write(f'<i>{response}</i>',unsafe_allow_html=True)		
 			relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 			with relevantCol2:
