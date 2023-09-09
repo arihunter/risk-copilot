@@ -310,10 +310,10 @@ global prompt
 if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
 	with st.spinner("Thinking"):
-		response = get_response(prompt)
 		placeholder = st.empty()
-		st.session_state.response = response
-		paceholder.write(f'<i>{response}</i>',unsafe_allow_html=True)
+		response = get_response(prompt)
+		with placeholder:
+			st.write(f'<i>{response}</i>',unsafe_allow_html=True)		
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		with relevantCol2:
 			if st.session_state.feedback == False:
