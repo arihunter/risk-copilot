@@ -297,7 +297,7 @@ def ResponseCallback(prompt:str,response:str,_type:str):
   curr_time = datetime.now()
   date = curr_time.strftime("%m/%d/%Y/")
   time = curr_time.strftime("%H:%M:%S")
-  feedbackDict = {"Prompt":[_prompt],"Response":[_response],"Feedback":[_type],"UserId":[userEmail],"Date":[date],"Time":[time]}
+  feedbackDict = {"Prompt":[prompt],"Response":[response],"Feedback":[_type],"UserId":[userEmail],"Date":[date],"Time":[time]}
   feedbackDf = pd.DataFrame.from_dict(feedbackDict)
   insert_data_into_sheet(feedbackDf)
 
