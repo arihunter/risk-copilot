@@ -35,7 +35,7 @@ if "feedback" not in st.session_state.keys():
   st.session_state.feedback = False
 if "prompt" not in st.session_state.keys():
   st.session_state.feedback = None
- if "response" not in st.session_state.keys():
+if "response" not in st.session_state.keys():
   st.session_state.feedback = None
 
 dataset_keys = ["lms","credit-decisioning","collection","social-media"]
