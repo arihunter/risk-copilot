@@ -29,7 +29,7 @@ from llama_index.tools import BaseTool, ToolOutput, adapt_to_async_tool
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-DEFAULT_MAX_FUNCTION_CALLS = 10
+DEFAULT_MAX_FUNCTION_CALLS = 15
 DEFAULT_MODEL_NAME = "gpt-4"
 
 
