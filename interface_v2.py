@@ -306,6 +306,7 @@ def get_response(query:str) -> str:
 	return response
 
 #Input
+st.write(f'<i>{st.session_state.response}</i>',unsafe_allow_html=True)
 global prompt
 if prompt := st.chat_input("Enter Here",on_submit=ChatInputCallback):
 	st.session_state.prompt = prompt
