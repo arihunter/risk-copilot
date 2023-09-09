@@ -304,9 +304,11 @@ def get_response(query:str) -> str:
 
 #Input
 global prompt
-with st.form("Input Form"):
+with st.form("Input Form",clear_on_submit = True):
 	prompt = st.text_area("Enter Here")
-	submit = st.form_submit_button("Submit",on_click=ChatInputCallback,type="primary",use_container_width=True)
+	col1,col2,col3 = st.columns([0.7,0.15,0.15])
+	with col3:
+		submit = st.form_submit_button("Submit",on_click=ChatInputCallback,type="primary")
 
 if submit:
 	with st.status("Generating your response") as status:
