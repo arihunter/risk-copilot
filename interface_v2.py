@@ -30,6 +30,15 @@ col1,col2,col3 = st.columns([1,1,1])
 col2.title("Stealth")
 st.divider()
 
+#CSS 
+css = r'''
+    <style>
+        [data-testid="stForm"] {border: 0px}
+    </style>
+'''
+
+st.markdown(css, unsafe_allow_html=True)
+
 
 #initialisation of session state variables
 if "thumbs" not in st.session_state.keys():
@@ -298,8 +307,8 @@ def ChatInputCallback():
   st.session_state.thumbs = False
  
 @st.cache_data(show_spinner=False)
-def get_response(query:str) -> str:
-	response = agentLlama.chat(query)
+async def get_response(query:str) -> str:
+	response = await agentLlama.chat(query)
 	return response
 
 #Input
