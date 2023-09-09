@@ -310,7 +310,6 @@ global prompt
 if prompt := st.text_area("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
 	with st.status("Generating your response") as status:
-		st.write("Calling Functions")
 		response = get_response(prompt)
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
