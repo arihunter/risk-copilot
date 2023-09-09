@@ -264,8 +264,8 @@ with st.sidebar:
     displayText = "Updating the " + DatasetOption + "dataset"
     UploadedFile = st.file_uploader("Update the file here",type="csv",on_change=UploadedFileCallback,args=[displayText])
     if UploadedFile is not None:
-      dataset_path = "/Users/arihantbarjatya/Documents/finwin/" + str(DatasetOption.lower()) + "_data.csv"
-      string_path = "/Users/arihantbarjatya/Documents/finwin/" + str(DatasetOption.lower()) + "_data.txt"
+      dataset_path = str(DatasetOption.lower()) + "_data.csv"
+      string_path = str(DatasetOption.lower()) + "_data.txt"
       with st.spinner("Updating"):
         pd.read_csv(UploadedFile).to_csv(dataset_path)
   else:
@@ -273,8 +273,8 @@ with st.sidebar:
     UploadedFile = st.file_uploader("Upload the file here",type="csv",on_change=UploadedFileCallback,args=[displayText])
     if UploadedFile is not None:
       st.session_state[str(DatasetOption.lower())] = True
-      dataset_path = "/Users/arihantbarjatya/Documents/finwin/" + str(DatasetOption.lower()) + "_data.csv"
-      string_path = "/Users/arihantbarjatya/Documents/finwin/" + str(DatasetOption.lower()) + "_data.txt"
+      dataset_path = str(DatasetOption.lower()) + "_data.csv"
+      string_path = str(DatasetOption.lower()) + "_data.txt"
       with st.spinner("Uploading"):
         pd.read_csv(UploadedFile).to_csv(dataset_path)
 
