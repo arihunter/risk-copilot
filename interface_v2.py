@@ -12,6 +12,7 @@ from google.oauth2 import service_account
 import gspread
 from sklearn import ensemble
 from sklearn.tree import DecisionTreeClassifier
+from datetime import datetime
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
@@ -293,7 +294,10 @@ def insert_data_into_sheet(dataframe):
 #Chat Interface
 def ResponseCallback(prompt:str,response:str,_type:str):
   st.session_state.thumbs = True
-  feedbackDict = {"Prompt":[prompt],"Response":[response],"Feedback":[_type],"UserId":[userEmail]}
+  curr_time = datetime.now()
+  date = curr_time.strftime("%m/%d/%Y/")
+  time = curr_time.strftime("%H:%M:%S")
+  feedbackDict = {"Prompt":[_prompt],"Response":[_response],"Feedback":[_type],"UserId":[userEmail],"Date":[date],"Time":[time]}
   feedbackDf = pd.DataFrame.from_dict(feedbackDict)
   insert_data_into_sheet(feedbackDf)
 
