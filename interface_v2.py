@@ -309,18 +309,18 @@ def get_response(query:str) -> str:
 global prompt
 if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
-	placeholder = st.empty()
-	with placeholder:
-		with st.spinner("Thinking"):
-			response = get_response(prompt)
+	with st.spinner("Thinking"):
+		placeholder = st.empty()
+		response = get_response(prompt)
+		with placeholder:
 			st.write(f'<i>{response}</i>',unsafe_allow_html=True)		
 			relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
-			with relevantCol2:
-				if st.session_state.feedback == False:
-					ThumbsUp = st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
-			with relevantCol3:
-				if st.session_state.feedback == False:
-					ThumbsDown = st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)
+		with relevantCol2:
+			if st.session_state.feedback == False:
+				ThumbsUp = st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
+		with relevantCol3:
+			if st.session_state.feedback == False:
+				ThumbsDown = st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)
 
 
 
