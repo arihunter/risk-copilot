@@ -44,6 +44,9 @@ st.markdown(css, unsafe_allow_html=True)
 if "thumbs" not in st.session_state.keys():
 	st.session_state.thumbs = False
 
+if "response" not in st.session_state.keys():
+	st.session_state.response = False
+
 
 dataset_keys = ["lms","credit-decisioning","collection","social-media"]
 for key in dataset_keys:
@@ -305,8 +308,10 @@ def ResponseCallback(prompt:str,response:str,_type:str):
 
 def ChatInputCallback():
   st.session_state.thumbs = False
+  st.session_state.response = True
  
-@st.cache_data(show_spinner=False)
+
+
 def get_response(_query:str) -> str:
 	response = agentLlama.chat(_query)
 	return str(response)
@@ -324,8 +329,8 @@ if submit:
 		response = get_response(str(prompt))
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
+	st.write(f'<font size="4">{response}</i>',unsafe_allow_html=True)
 	with placeholder.container():
-		st.write(f'<font size="4">{response}</i>',unsafe_allow_html=True)
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		if (st.session_state.thumbs == False):
 			with relevantCol2:
