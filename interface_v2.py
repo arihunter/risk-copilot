@@ -307,7 +307,7 @@ def get_response(query:str) -> str:
 
 #Input
 global prompt
-if prompt := st.text_input("Enter Here",on_submit=ChatInputCallback):
+if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
 	with st.spinner("Thinking"):
 		response = get_response(prompt)
