@@ -312,13 +312,13 @@ if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	with st.spinner("Thinking"):
 		response = get_response(prompt)
 		st.write(f'<i>{response}</i>',unsafe_allow_html=True)
-		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
-		with relevantCol2:
-			if st.session_state.feedback == False:
-				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
-		with relevantCol3:
-			if st.session_state.feedback == False:
-				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
+	relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
+	with relevantCol2:
+		if st.session_state.feedback == False:
+			st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
+	with relevantCol3:
+		if st.session_state.feedback == False:
+			st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
 
 
 
