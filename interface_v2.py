@@ -31,8 +31,8 @@ st.divider()
 
 
 #initialisation of session state variables
-if "feedback" not in st.session_state.keys():
-  st.session_state.feedback = False
+if "thumbs" not in st.session_state.keys():
+	st.session_state.thumbs = False
 if "prompt" not in st.session_state.keys():
   st.session_state.feedback = None
 if "response" not in st.session_state.keys():
@@ -292,13 +292,13 @@ def insert_data_into_sheet(dataframe):
 
 #Chat Interface
 def ResponseCallback(prompt:str,response:str,_type:str):
-  st.session_state.feedback = True
+  st.session_state.thumbs = True
   feedbackDict = {"Prompt":[prompt],"Response":[response],"Feedback":[_type],"UserId":[userEmail]}
   feedbackDf = pd.DataFrame.from_dict(feedbackDict)
   insert_data_into_sheet(feedbackDf)
 
 def ChatInputCallback():
-  st.session_state.feedback = False
+  st.session_state.thumbs = False
  
 @st.cache_data(show_spinner=False)
 def get_response(query:str) -> str:
@@ -309,16 +309,18 @@ def get_response(query:str) -> str:
 global prompt
 if prompt := st.text_input("Enter Here",on_change=ChatInputCallback):
 	st.session_state.prompt = prompt
-	with st.spinner("Thinking"):
+	with st.status("Generating your response") as status:
 		response = get_response(prompt)
+		status.update(label="Done",state="complete")
+	placeholder = st.empty()
+	with placeholder.container():
 		st.write(f'<i>{response}</i>',unsafe_allow_html=True)
-	relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
-	with relevantCol2:
-		if st.session_state.feedback == False:
-			st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
-	with relevantCol3:
-		if st.session_state.feedback == False:
-			st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
+		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
+		if (st.session_state.thumbs == False):
+			with relevantCol2:
+				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
+			with relevantCol3:
+				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
 
 
 
