@@ -29,19 +29,12 @@ import sentry_sdk
 from sentry_sdk import set_level
 from sentry_sdk import capture_message
 
-set_level("warning")
 
 
-logger = logging.getLogger("stealth")
-logger.setLevel(logging.WARNING)
-
-loggingHandler = logging.FileHandler("stealth.log", mode='a')
-loggingFormatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
-
-# add formatter to the handler
-loggingHandler.setFormatter(loggingFormatter)
-# add handler to the logger
-logger.addHandler(loggingHandler)
+def before_send(event, hint):
+    print(hint)
+    event['fingerprint'] = ['logging']
+    return event
 
 sentry_sdk.init(
     dsn="https://e78ba04a599b21c66183afb4647a1ade@o4505861593563136.ingest.sentry.io/4505861595791360",
@@ -53,8 +46,10 @@ sentry_sdk.init(
     # of sampled transactions.
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
+    before_send=before_send
 )
 
+set_level("info")
 
 
 
