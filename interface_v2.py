@@ -13,6 +13,30 @@ import gspread
 from sklearn import ensemble
 from sklearn.tree import DecisionTreeClassifier
 from datetime import datetime
+import logging
+import sentry_sdk
+from sentry_sdk import set_level
+from sentry_sdk import capture_message
+
+def before_send(event, hint):
+    print(hint)
+    event['fingerprint'] = ['logging']
+    return event
+
+sentry_sdk.init(
+    dsn="https://e78ba04a599b21c66183afb4647a1ade@o4505861593563136.ingest.sentry.io/4505861595791360",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+    before_send=before_send
+)
+
+set_level("info")
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
@@ -147,9 +171,9 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   Context:
   {str(context)}
   """
-  print(f"The values calculated are {context}")
+  capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
-  print(f"Gpt helper response for risk metric function output formatting {response}")
+  capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   return response
 
 
@@ -204,6 +228,7 @@ def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
     ntc_npa = grouped_df[grouped_df[col_group_name].isnull()]['npa'].iloc[0]
     non_ntc_npa = grouped_df[~grouped_df[col_group_name].isnull()]['defaulted_amount'].sum()/grouped_df[~grouped_df[col_group_name].isnull()]['loan_amount'].sum()
     response = {'ntc_fraction' : ntc_fraction, 'non_ntc_fraction' : non_ntc_fraction, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : grouped_df["user_id"].sum()}
+    capture_message(f"The values calculated are {response}")
     return grouped_df.to_string(), str(response)
   return grouped_df.to_string()
 
