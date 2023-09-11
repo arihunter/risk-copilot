@@ -29,7 +29,8 @@ import sentry_sdk
 from sentry_sdk import set_level
 from sentry_sdk import capture_message
 
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 def before_send(event, hint):
     print(hint)
