@@ -1,5 +1,5 @@
 import streamlit as st 
-from agent import OpenAIAgent
+from llama_agent import OpenAIAgent
 import openai 
 from langchain.agents.tools import Tool
 from langchain.chat_models import ChatOpenAI
@@ -17,10 +17,17 @@ import logging
 import sentry_sdk
 from sentry_sdk import set_level
 from sentry_sdk import capture_message
+import uuid
+import globals_
+
+#Global Variables 
+
+
+
 
 def before_send(event, hint):
-    print(hint)
-    event['fingerprint'] = ['logging']
+    #print(globals_.chat_id)
+    event['fingerprint'] = [globals_.chat_id]
     return event
 
 sentry_sdk.init(
@@ -338,11 +345,11 @@ def ChatInputCallback():
 
 
 def get_response(_query:str) -> str:
-	response = agentLlama.chat(_query)
-	return str(response)
+  chat_id = str(uuid.uuid4())
+  response = agentLlama.chat(_query)
+  return str(response)
 
 #Input
-global prompt
 with st.form("Input Form",clear_on_submit = True):
 	prompt = st.text_area("Enter Here")
 	col1,col2,col3 = st.columns([0.7,0.15,0.15])

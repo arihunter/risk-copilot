@@ -28,13 +28,14 @@ from llama_index.tools import BaseTool, ToolOutput, adapt_to_async_tool
 import sentry_sdk
 from sentry_sdk import set_level
 from sentry_sdk import capture_message
+import globals_
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 def before_send(event, hint):
-    print(hint)
-    event['fingerprint'] = ['logging']
+    #print(globals_.chat_id)
+    event['fingerprint'] = [globals_.chat_id]
     return event
 
 sentry_sdk.init(
