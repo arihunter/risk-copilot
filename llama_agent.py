@@ -29,17 +29,18 @@ import sentry_sdk
 from sentry_sdk import set_level
 from sentry_sdk import capture_message
 import globals_
+import streamlit as st
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 def before_send(event, hint):
     #print(globals_.chat_id)
-    event['fingerprint'] = [globals_.chat_id]
+    event['fingerprint'] = ["logging"]
     return event
 
 sentry_sdk.init(
-    dsn="https://e78ba04a599b21c66183afb4647a1ade@o4505861593563136.ingest.sentry.io/4505861595791360",
+    dsn=st.secrets["SENTRY_DSN"],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
