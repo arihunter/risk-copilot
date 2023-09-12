@@ -141,11 +141,10 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   dateCheck = gpt_helper(prompt,dateCheckPrompt)
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
-
   lms_df = pd.read_csv("lms_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(dparser.parse)
-  lms_df_filtered = lms_df[(lms_df['due_date']) > dparser.parse(start_dt)]
-  lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) < dparser.parse(end_dt)]
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
+  lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
   defaulted_amount = lms_df_filtered['defaulted_amount'].sum()
   disbursal_amount = lms_df_filtered['loan_amount'].sum()
@@ -153,7 +152,6 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   average_ticket_siZe = disbursal_amount/number_of_loans_disbursed
   portfolio_npa = defaulted_amount / disbursal_amount
   context = {'defaulted_amount' : round(defaulted_amount,2), 'disbursal_amount' : round(disbursal_amount,2), 'number_of_loans_disbursed' : round(number_of_loans_disbursed,2), 'portfolio_npa' : round(portfolio_npa,2)}
-  
   #response quality check
   example_context1 = {'defaulted_amount': 189256.01, 'disbursal_amount': 1020599.01, 'number_of_loans_disbursed': 4, 'portfolio_npa': 0.19}
   example_context2 = {'defaulted_amount': 1687413.0, 'disbursal_amount': 9991314.34, 'number_of_loans_disbursed': 45, 'portfolio_npa': 0.17}
@@ -214,12 +212,11 @@ def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
 
-
   lms_df = pd.read_csv("lms_data.csv")
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(dparser.parse)
-  lms_df_filtered = lms_df[(lms_df['due_date']) > dparser.parse(start_dt)]
-  lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) < dparser.parse(end_dt)]
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
+  lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
   credit_decisioning_df = credit_decisioning_df.drop_duplicates()
   credit_decisioning_lms_df = pd.merge(lms_df_filtered, credit_decisioning_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
