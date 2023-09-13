@@ -19,6 +19,7 @@ from sentry_sdk import set_level
 from sentry_sdk import capture_message
 import uuid
 import globals_
+from difflib import SequenceMatcher
 
 #Global Variables 
 
@@ -101,6 +102,42 @@ def gpt_helper(query:str,context:str) -> str:
   )
   return response["choices"][0]["message"]["content"]
 
+#====reading all my datasets========
+credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+location_df = pd.read_csv("location_data.csv")
+master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
+master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
+
+def pick_data_set(prompt : str)-> str:
+  pick_data_set_prompt = """
+  I will provide you with a user query, you have to analyse the query carefully and identify the feature name mentioned in the query. 
+  If you're able to identify a feature from the user query you have to respond with the feature name else NO.
+  Here are some examples for you.
+
+  Example 1:
+  Query: do the risk profiling of my portfolio using the bureau score
+  Response: bureau score
+
+  Example 2:
+  Query : use the p_dist_gc_500 to do the risk profiling for year 2022 
+  Response: p_dist_gc_500
+  
+  Example 3:
+  Query : calculate NPA for year 2022
+  Response: NO.
+  """
+  col_name_extracted = gpt_helper(prompt,pick_data_set_prompt)
+  if col_name_extracted == "NO":
+    return "There was insufficent information to do the analysis. Ask the user to give feature name in the query. Do not make up any random metrics by yourself"
+  for key in master_col_dict:
+    col_list = master_col_dict['key']
+    for col in col_list:
+      score = SequenceMatcher(None, col_name_extracted, col).ratio()
+      if(score > 0.7):
+        dataset_name = key
+        col_name = col
+        break
+  return dataset_name, col_name
 
 def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   """
@@ -181,7 +218,34 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   return response
 
+def bureau_metrics(start_dt:str,end_dt:str) -> str:
 
+  """This function is used to calculate various metrics related to the bureau score of the borrower.
+  Bureau score is an indicator of the credit-worthiness of a borrower. People who do not have a bureau score or have a blank bureau score are called New-To-Credit or NTC. NTC are customers who have not taken a loan before and do not have any record/history in credit bureau. Similarly, people who have a bureau score or have taken a loan before are referred to as non-NTC. Using the bureau score the function can calculate the following:
+      ntc_count which is the number of NTC in the portfolio
+      non_ntc_count which is the number of non-ntc in the portfolio
+      ntc_npa which is the bad-rate or npa of NTC in the portfolio
+      non_ntc_npa which is the bad-rate or npa of non-NTC in the portfolio"""
+
+  lms_df = pd.read_csv("lms_data.csv")
+  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
+  lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
+  lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
+  credit_decisioning_df = credit_decisioning_df.drop_duplicates()
+  credit_decisioning_lms_df = pd.merge(lms_df_filtered, credit_decisioning_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
+  bureau_score_col = 'bureau_score' #====this has to be detected from bureau data columns list=====
+  ntc_df = credit_decisioning_lms_df[credit_decisioning_lms_df[bureau_score_col].isnull()]
+  non_ntc_df = credit_decisioning_lms_df[~(credit_decisioning_lms_df[bureau_score_col].isnull())]
+  ntc_count = ntc_df['user_id'].nunique()
+  total = credit_decisioning_lms_df['user_id'].nunique()
+  non_ntc_count = total - ntc_count
+  ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
+  non_ntc_npa = ntc_npa['defaulted_amount'].sum()/ntc_npa['loan_amount'].sum()
+  response = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total}
+  capture_message(f"The values calculated are {response}")
+  return str(response)
 
 def bin_df(df:pd.DataFrame,col_name:str,number_of_bins:int=5) -> pd.DataFrame:
   col_group_name = col_name + "_groups"
@@ -189,15 +253,9 @@ def bin_df(df:pd.DataFrame,col_name:str,number_of_bins:int=5) -> pd.DataFrame:
   return df
 
 
-def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
+def risk_profiling(start_dt:str,end_dt:str) -> str:
   """
-  This function is used to do risk profiling for borrowers using a indicator, for a given time period. Here the indicator could be the following:
-
-  bureau score: This score is an indicator of the credit-worthiness of a borrower. People who do not have a bureau score or have a blank bureau score are called New-To-Credit or NTC. NTC are customers who have not taken a loan before and do not have any record/history in credit bureau. Similarly, people who have a bureau score or have taken a loan before are referred to as non-NTC. Using the bureau score the function can calculate the following:
-      ntc_fraction which is the fraction of NTC in the portfolio
-      non_ntc_fraction which is the fraction of non-ntc in the portfolio
-      ntc_npa which is the bad-rate or npa of NTC in the portfolio
-      non_ntc_npa which is the bad-rate or npa of non-NTC in the portfolio
+  This function is used to do risk profiling for borrowers using a indicator, for a given time period.
   """
   # start_dt = st.text_input("Start Date")
   # end_dt = st.text_input("End Date")
@@ -205,15 +263,16 @@ def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
       return "Sufficient data not available !, please provide all the required data."
-
   #sanity check
-  dateCheckPrompt = "I will provide you with a user query , you have to analyse the query carefully and identify if there is a time period mentioned in the query. You have to respond only with YES or NO depending on the query."
+  dateCheckPrompt = "I will provide you with a user query, you have to analyse the query carefully and identify if there is a time period mentioned in the query. You have to respond only with YES or NO depending on the query."
   dateCheck = gpt_helper(prompt,dateCheckPrompt)
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
-
   lms_df = pd.read_csv("lms_data.csv")
-  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  #===picking the dataset given the prompt=========
+  dataset_name, col_name = pick_data_set(prompt)
+  dataset_df = master_df_dict[dataset_name]
+  # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -226,16 +285,7 @@ def risk_profiling(start_dt:str,end_dt:str,col_name:str="bureau_score") -> str:
   grouped_df = credit_decisioning_lms_df.groupby(col_group_name, dropna = False).agg({'user_id' : 'count','defaulted_amount' : 'sum', 'loan_amount' : 'sum'}).reset_index()
   grouped_df["npa"] = grouped_df["defaulted_amount"]/ grouped_df["loan_amount"]
   grouped_df["fraction_of_users"] = grouped_df["user_id"]/grouped_df["user_id"].sum()
-  if(col_name == 'bureau_score'):
-    ntc_fraction = grouped_df[grouped_df[col_group_name].isnull()]['fraction_of_users'].iloc[0]
-    non_ntc_fraction = 1-ntc_fraction
-    ntc_npa = grouped_df[grouped_df[col_group_name].isnull()]['npa'].iloc[0]
-    non_ntc_npa = grouped_df[~grouped_df[col_group_name].isnull()]['defaulted_amount'].sum()/grouped_df[~grouped_df[col_group_name].isnull()]['loan_amount'].sum()
-    response = {'ntc_fraction' : ntc_fraction, 'non_ntc_fraction' : non_ntc_fraction, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : grouped_df["user_id"].sum()}
-    capture_message(f"The values calculated are {response}")
-    return grouped_df.to_string(), str(response)
   return grouped_df.to_string()
-
 
 def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
   features = external_data_lms_df
