@@ -20,6 +20,7 @@ from sentry_sdk import capture_message
 import uuid
 import globals_
 
+
 #Global Variables 
 
 
@@ -58,7 +59,7 @@ feedbackSheet = gsheets_connection()
 
 st.set_page_config(page_title="Stealth")
 col1,col2,col3 = st.columns([1,1,1])
-col2.title("Stealth")
+col2.title("Workbench")
 st.divider()
 
 #CSS 
@@ -75,8 +76,11 @@ st.markdown(css, unsafe_allow_html=True)
 if "thumbs" not in st.session_state.keys():
 	st.session_state.thumbs = False
 
-if "response" not in st.session_state.keys():
-	st.session_state.response = False
+if "generate" not in st.session_state.keys():
+	st.session_state.generate = False
+
+if "query" not in st.session_state.keys():
+  st.session_state.query = ""
 
 
 dataset_keys = ["lms","credit-decisioning","collection","social-media"]
@@ -325,7 +329,7 @@ def insert_data_into_sheet(dataframe):
   last_filled_row = find_last_filled_row(worksheet)
   worksheet.insert_rows(values, last_filled_row)
 
-#Chat Interface
+#Callbacks
 def ResponseCallback(prompt:str,response:str,_type:str):
   st.session_state.thumbs = True
   curr_time = datetime.now()
@@ -335,25 +339,33 @@ def ResponseCallback(prompt:str,response:str,_type:str):
   feedbackDf = pd.DataFrame.from_dict(feedbackDict)
   insert_data_into_sheet(feedbackDf)
 
-def ChatInputCallback():
+def SubmitCallback():
   st.session_state.thumbs = False
-  st.session_state.response = True
+  st.session_state.generate = True
  
+def ClearCallback():
+  st.session_state.query = ""
+  st.session_state.generate = False
+  st.session_state.thumbs = True
 
 
-def get_response(_query:str) -> str:
-  chat_id = str(uuid.uuid4())
-  response = agentLlama.chat(_query)
+
+
+@st.cache_resource(show_spinner=False)
+def get_response(query:str) -> str:
+  response = agentLlama.chat(query)
   return str(response)
 
-#Input
-with st.form("Input Form"):
-	prompt = st.text_area("Enter Here")
-	col1,col2,col3 = st.columns([0.7,0.15,0.15])
-	with col3:
-		submit = st.form_submit_button("Submit",on_click=ChatInputCallback,type="primary")
-
-if submit:
+global prompt
+prompt = st.text_area("Enter Here",key="query")
+col1,col2,col3 = st.columns([3.5,2,1],gap="large")
+with col1:
+  submit = st.button("Submit",on_click=SubmitCallback,type="primary")
+with col3:
+  clear = st.button("Clear",on_click=ClearCallback,type="primary")
+  
+st.markdown("")
+if st.session_state.generate:
 	with st.status("Generating your response") as status:
 		response = get_response(str(prompt))
 		status.update(label="Done",state="complete")
