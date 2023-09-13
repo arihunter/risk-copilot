@@ -347,7 +347,7 @@ def get_response(_query:str) -> str:
   return str(response)
 
 #Input
-with st.form("Input Form",clear_on_submit = True):
+with st.form("Input Form"):
 	prompt = st.text_area("Enter Here")
 	col1,col2,col3 = st.columns([0.7,0.15,0.15])
 	with col3:
