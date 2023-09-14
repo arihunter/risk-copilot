@@ -254,6 +254,7 @@ def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
   #===presently taking top 10 features only=====
   sortedFeatures = sortedFeatures[:num_fts]
   sortedIdx = [x[1] for x in sortedFeatures]
+  #top_fts = [features.columns[x] for x in sortedIdx]
   df_with_top_fts = features.iloc[:,sortedIdx]
   top_fts = list(df_with_top_fts.columns)
   return top_fts
@@ -360,9 +361,10 @@ global prompt
 prompt = st.text_area("Enter Here",key="query")
 col1,col2,col3 = st.columns([3.5,2,1],gap="large")
 with col1:
-  submit = st.button("Submit",on_click=SubmitCallback,type="primary")
-with col3:
   clear = st.button("Clear",on_click=ClearCallback,type="primary")
+with col3:
+  submit = st.button("Submit",on_click=SubmitCallback,type="primary")
+  
   
 st.markdown("")
 if st.session_state.generate:
