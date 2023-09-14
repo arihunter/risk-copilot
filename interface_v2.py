@@ -84,7 +84,7 @@ if "query" not in st.session_state.keys():
   st.session_state.query = ""
 
 
-dataset_keys = ["lms","credit-decisioning","collection","social-media"]
+dataset_keys = ["lms","credit-decisioning","collection","location"]
 for key in dataset_keys:
   if key not in st.session_state :
     st.session_state[key] = False
@@ -106,9 +106,7 @@ def gpt_helper(query:str,context:str) -> str:
   )
   return response["choices"][0]["message"]["content"]
 
-context = ""
-output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: 
-{str(context)}"""
+output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: \n"""
 
 # #====reading all my datasets========
 # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
@@ -199,30 +197,31 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   portfolio_npa = defaulted_amount / disbursal_amount
   context = {'defaulted_amount' : round(defaulted_amount,2), 'disbursal_amount' : round(disbursal_amount,2), 'number_of_loans_disbursed' : round(number_of_loans_disbursed,2), 'portfolio_npa' : round(portfolio_npa,2)}
   # response quality check
-  # example_context1 = {'defaulted_amount': 189256.01, 'disbursal_amount': 1020599.01, 'number_of_loans_disbursed': 4, 'portfolio_npa': 0.19}
-  # example_context2 = {'defaulted_amount': 1687413.0, 'disbursal_amount': 9991314.34, 'number_of_loans_disbursed': 45, 'portfolio_npa': 0.17}
-  # responsePrompt = f"""
-  # I need you to answer the users query using the given context. 
-  # The response to the query is certain to be in the context.
-  # Go carefully through the query and context and just return the answer, nothing else.
-  # Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. 
-  # Here are some examples for you.
+  example_context1 = {'defaulted_amount': 189256.01, 'disbursal_amount': 1020599.01, 'number_of_loans_disbursed': 4, 'portfolio_npa': 0.19}
+  example_context2 = {'defaulted_amount': 1687413.0, 'disbursal_amount': 9991314.34, 'number_of_loans_disbursed': 45, 'portfolio_npa': 0.17}
+  responsePrompt = f"""
+  I need you to answer the users query using the given context. 
+  The response to the query is certain to be in the context.
+  Go carefully through the query and context and just return the answer, nothing else.
+  Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. 
+  Here are some examples for you.
 
-  # Example 1:
-  # Context : {example_context1}
-  # Query: Calculate defaulted amount for the third financial quarter of 2021.
-  # Response: The defaulted amount for the third financial quarter of 2021 is 189256.01.
+  Example 1:
+  Context : {example_context1}
+  Query: Calculate defaulted amount for the third financial quarter of 2021.
+  Response: The defaulted amount for the third financial quarter of 2021 is 189256.01.
 
-  # Example 2:
-  # Context : {example_context2}
-  # Query : What is the NPA metric for the time period "01/04/2021" to "31/08/2021"
-  # Response: The NPA metric for the time period "01/04/2021" to "31/08/2021" is 0.17.
+  Example 2:
+  Context : {example_context2}
+  Query : What is the NPA metric for the time period "01/04/2021" to "31/08/2021"
+  Response: The NPA metric for the time period "01/04/2021" to "31/08/2021" is 0.17.
 
-  # Now using the given context answer the query.
-  # Context:
-  # {str(context)}
-  # """
-  responsePrompt = output_formatting_prompt
+  Now using the given context answer the query.
+  Context:
+  {str(context)}
+  """
+  # responsePrompt = output_formatting_prompt
+  # responsePrompt += str(context)
   capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
@@ -258,13 +257,14 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   total = credit_decisioning_lms_df['user_id'].nunique()
   non_ntc_count = total - ntc_count
   ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
-  non_ntc_npa = ntc_npa['defaulted_amount'].sum()/ntc_npa['loan_amount'].sum()
+  non_ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
   avg_bureau_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 1][bureau_score_col].mean()
   avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
-  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1].mean()
-  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0].mean()
+  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == "1"].mean()
+  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == "0"].mean()
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
-  responsePrompt = output_formatting_prompt
+  responsePrompt = output_formatting_prompt 
+  responsePrompt += "\n" + str(context)
   capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
@@ -335,12 +335,15 @@ def evaluate_data_source():
   Here top_fts has a list of top 10 features.
   """
   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-  external_data = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/social-media_data.csv")
-  lms_df = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/lms_data.csv")
-  external_data_lms_df = pd.merge(external_data, lms_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
-  labels = external_data_lms_df["is_default"]
-  external_data_lms_df.drop(["is_default"],axis=1,inplace=True)
-  top_fts = calculate_feature_importance(external_data_lms_df,labels)
+  dataset_idx=[3]
+  for idx in dataset_idx:
+    if st.session_state[dataset_keys[idx]] == False:
+      return "Sufficient data not available !, please provide all the required data."
+  external_data = pd.read_csv("location_data.csv")
+  external_data.dropna(inplace=True)
+  labels = external_data["dep_var"]
+  external_data.drop(["dep_var","address"],axis=1,inplace=True)
+  top_fts = calculate_top_features(external_data,labels)
   #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
   return top_fts
 
@@ -350,12 +353,12 @@ def evaluate_data_source():
 RiskProfileTool = FunctionTool.from_defaults(fn=risk_profiling)
 RiskMetricsTool = FunctionTool.from_defaults(fn=calculate_risk_metrics)
 BureauMetricsTool = FunctionTool.from_defaults(fn=calculate_bureau_metrics)
-#EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
+EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
 
 
 
 #Tools Llamaindex
-llamaTools = [RiskMetricsTool,RiskProfileTool, BureauMetricsTool]
+llamaTools = [RiskMetricsTool,RiskProfileTool, BureauMetricsTool,EvaluateDataTool]
 agentLlama = OpenAIAgent.from_tools(llamaTools)
 
 
