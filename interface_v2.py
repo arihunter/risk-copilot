@@ -135,12 +135,16 @@ def pick_data_set(prompt : str , master_col_dict : dict)-> str:
   if col_name_extracted == "NO":
     return "There was insufficent information to do the analysis. Ask the user to give feature name in the query. Do not make up any random metrics by yourself"
   for key in master_col_dict:
+    # print(key)
     col_list = master_col_dict[key]
+    capture_message(f"The column list is {col_list}")
     for col in col_list:
       score = SequenceMatcher(None, col_name_extracted, col).ratio()
       if(score > 0.7):
         dataset_name = key
         col_name = col
+	capture_message(f"The dataset name is {dataset_name}")
+	capture_message(f"The column name is {col_name}")
         break
   return dataset_name, col_name
 
