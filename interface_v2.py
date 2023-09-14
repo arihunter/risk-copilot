@@ -102,7 +102,7 @@ def gpt_helper(query:str,context:str) -> str:
         {"role":"system","content":SYSTEM_PROMPT},
         {"role":"user","content":query}
     ],
-    max_tokens=3000
+    max_tokens=8100
   )
   return response["choices"][0]["message"]["content"]
 
