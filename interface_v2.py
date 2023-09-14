@@ -315,6 +315,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   location_df = pd.read_csv("location_data.csv")
   master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
   master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
+  capture_message(f"The master_col_dict is {master_col_dict}")
   #picking the dataset given the prompt=========
   dataset_name, col_name = pick_data_set(prompt, master_col_dict)
   #sanity check
