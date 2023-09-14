@@ -106,9 +106,9 @@ def gpt_helper(query:str,context:str) -> str:
   )
   return response["choices"][0]["message"]["content"]
 
-# context = ""
-# output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: 
-# {str(context)}"""
+context = ""
+output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: 
+{str(context)}"""
 
 # #====reading all my datasets========
 # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
