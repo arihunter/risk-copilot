@@ -429,7 +429,7 @@ def get_response(query:str) -> str:
 
 global prompt
 prompt = st.text_area("Enter Here",key="query")
-col1,col2,col3 = st.columns([3.5,2,1],gap="large")
+col1,col2,col3 = st.columns([3,2,1],gap="large")
 with col1:
   clear = st.button("Clear",on_click=ClearCallback,type="primary")
 with col3:
