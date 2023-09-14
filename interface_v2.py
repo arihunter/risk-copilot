@@ -382,7 +382,7 @@ RiskMetricsTool = FunctionTool.from_defaults(fn=calculate_risk_metrics)
 BureauMetricsTool = FunctionTool.from_defaults(fn=calculate_bureau_metrics)
 EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
 
-curr_date = datetime.datetime.today().strftime('%m/%d/%Y')
+curr_date = datetime.today().strftime('%m/%d/%Y')
 #Agent System Prompt
 AGENT_SYSTEM_PROMPT = """
 You are an expert risk analyst that always answers questions with the most relevant information using the tools at your disposal.
