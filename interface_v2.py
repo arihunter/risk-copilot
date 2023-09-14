@@ -102,6 +102,10 @@ def gpt_helper(query:str,context:str) -> str:
   )
   return response["choices"][0]["message"]["content"]
 
+context = ""
+output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: 
+{str(context)}"""
+
 #====reading all my datasets========
 credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
 location_df = pd.read_csv("location_data.csv")
@@ -178,6 +182,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   dateCheck = gpt_helper(prompt,dateCheckPrompt)
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
+
   lms_df = pd.read_csv("lms_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
@@ -189,44 +194,51 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   average_ticket_siZe = disbursal_amount/number_of_loans_disbursed
   portfolio_npa = defaulted_amount / disbursal_amount
   context = {'defaulted_amount' : round(defaulted_amount,2), 'disbursal_amount' : round(disbursal_amount,2), 'number_of_loans_disbursed' : round(number_of_loans_disbursed,2), 'portfolio_npa' : round(portfolio_npa,2)}
-  #response quality check
-  example_context1 = {'defaulted_amount': 189256.01, 'disbursal_amount': 1020599.01, 'number_of_loans_disbursed': 4, 'portfolio_npa': 0.19}
-  example_context2 = {'defaulted_amount': 1687413.0, 'disbursal_amount': 9991314.34, 'number_of_loans_disbursed': 45, 'portfolio_npa': 0.17}
-  responsePrompt = f"""
-  I need you to answer the users query using the given context. 
-  The response to the query is certain to be in the context.
-  Go carefully through the query and context and just return the answer, nothing else.
-  Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. 
-  Here are some examples for you.
+  # response quality check
+  # example_context1 = {'defaulted_amount': 189256.01, 'disbursal_amount': 1020599.01, 'number_of_loans_disbursed': 4, 'portfolio_npa': 0.19}
+  # example_context2 = {'defaulted_amount': 1687413.0, 'disbursal_amount': 9991314.34, 'number_of_loans_disbursed': 45, 'portfolio_npa': 0.17}
+  # responsePrompt = f"""
+  # I need you to answer the users query using the given context. 
+  # The response to the query is certain to be in the context.
+  # Go carefully through the query and context and just return the answer, nothing else.
+  # Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. 
+  # Here are some examples for you.
 
-  Example 1:
-  Context : {example_context1}
-  Query: Calculate defaulted amount for the third financial quarter of 2021.
-  Response: The defaulted amount for the third financial quarter of 2021 is 189256.01.
+  # Example 1:
+  # Context : {example_context1}
+  # Query: Calculate defaulted amount for the third financial quarter of 2021.
+  # Response: The defaulted amount for the third financial quarter of 2021 is 189256.01.
 
-  Example 2:
-  Context : {example_context2}
-  Query : What is the NPA metric for the time period "01/04/2021" to "31/08/2021"
-  Response: The NPA metric for the time period "01/04/2021" to "31/08/2021" is 0.17.
+  # Example 2:
+  # Context : {example_context2}
+  # Query : What is the NPA metric for the time period "01/04/2021" to "31/08/2021"
+  # Response: The NPA metric for the time period "01/04/2021" to "31/08/2021" is 0.17.
 
-  Now using the given context answer the query.
-  Context:
-  {str(context)}
-  """
+  # Now using the given context answer the query.
+  # Context:
+  # {str(context)}
+  # """
+  responsePrompt = output_formatting_prompt
   capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   return response
 
-def bureau_metrics(start_dt:str,end_dt:str) -> str:
-
-  """This function is used to calculate various metrics related to the bureau score of the borrower.
-  Bureau score is an indicator of the credit-worthiness of a borrower. People who do not have a bureau score or have a blank bureau score are called New-To-Credit or NTC. NTC are customers who have not taken a loan before and do not have any record/history in credit bureau. Similarly, people who have a bureau score or have taken a loan before are referred to as non-NTC. Using the bureau score the function can calculate the following:
+def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
+  """This function is used to calculate various metrics related to the bureau score of the borrower. People who do not have a bureau score or have not taken a loan before are called New-To-Credit or NTC. People who have a bureau score or have taken a loan before are referred to as non-NTC. Using the bureau score the function can calculate the following:
       ntc_count which is the number of NTC in the portfolio
       non_ntc_count which is the number of non-ntc in the portfolio
       ntc_npa which is the bad-rate or npa of NTC in the portfolio
-      non_ntc_npa which is the bad-rate or npa of non-NTC in the portfolio"""
-
+      non_ntc_npa which is the bad-rate or npa of non-NTC in the portfolio
+      avg_bureau_defaulters is the average bureau scores of defaulters
+      avg_bureau_non_defaulters is the average bureau scores of non-defaulters
+      avg_ticket_siZe_defaulters is the average loan ticket siZe of defaulters
+      avg_ticket_siZe_non_defaulters is the average loan ticket siZe of non-defaulters"""
+  dataset_idx=[0,1]
+  for idx in dataset_idx:
+    if st.session_state[dataset_keys[idx]] == False:
+      return "Sufficient data not available !, please provide all the required data."
+  
   lms_df = pd.read_csv("lms_data.csv")
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
@@ -243,7 +255,15 @@ def bureau_metrics(start_dt:str,end_dt:str) -> str:
   non_ntc_count = total - ntc_count
   ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
   non_ntc_npa = ntc_npa['defaulted_amount'].sum()/ntc_npa['loan_amount'].sum()
-  response = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total}
+  avg_bureau_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 1][bureau_score_col].mean()
+  avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
+  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1].mean()
+  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0].mean()
+  context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
+  responsePrompt = output_formatting_prompt
+  capture_message(f"The values calculated are {context}")
+  response = gpt_helper(prompt,responsePrompt)
+  capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   capture_message(f"The values calculated are {response}")
   return str(response)
 
@@ -271,8 +291,8 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   lms_df = pd.read_csv("lms_data.csv")
   #===picking the dataset given the prompt=========
   dataset_name, col_name = pick_data_set(prompt)
-  dataset_df = master_df_dict[dataset_name]
-  # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  dataset_df = master_df_dict[dataset_name] #======how to handle this @Arihant??======
+  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -281,7 +301,6 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   credit_decisioning_lms_df = pd.merge(lms_df_filtered, credit_decisioning_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
   credit_decisioning_lms_df = bin_df(credit_decisioning_lms_df, col_name, 5)
   col_group_name = col_name + "_groups"
-  grouped_df = credit_decisioning_lms_df.groupby(col_group_name, dropna = False)[["defaulted_amount","loan_amount"]].sum().reset_index()
   grouped_df = credit_decisioning_lms_df.groupby(col_group_name, dropna = False).agg({'user_id' : 'count','defaulted_amount' : 'sum', 'loan_amount' : 'sum'}).reset_index()
   grouped_df["npa"] = grouped_df["defaulted_amount"]/ grouped_df["loan_amount"]
   grouped_df["fraction_of_users"] = grouped_df["user_id"]/grouped_df["user_id"].sum()
@@ -325,12 +344,13 @@ def evaluate_data_source():
 #Agent creation
 RiskProfileTool = FunctionTool.from_defaults(fn=risk_profiling)
 RiskMetricsTool = FunctionTool.from_defaults(fn=calculate_risk_metrics)
+BureauMetricsTool = FunctionTool.from_defaults(fn=calculate_bureau_metrics)
 #EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
 
 
 
 #Tools Llamaindex
-llamaTools = [RiskMetricsTool,RiskProfileTool]
+llamaTools = [RiskMetricsTool,RiskProfileTool, BureauMetricsTool]
 agentLlama = OpenAIAgent.from_tools(llamaTools)
 
 
@@ -341,7 +361,7 @@ def UploadedFileCallback(displayText:str):
   print(displayText)
 
 with st.sidebar:
-  DatasetOption = st.selectbox("Choose the Dataset",("LMS","Credit-Decisioning","Collection","Social-Media"))
+  DatasetOption = st.selectbox("Choose the Dataset",("LMS","Credit-Decisioning","Collection","Location"))
   
   #Data Upload
   if st.session_state[str(DatasetOption.lower())] == True:
