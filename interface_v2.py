@@ -84,7 +84,7 @@ if "query" not in st.session_state.keys():
   st.session_state.query = ""
 
 
-dataset_keys = ["lms","credit-decisioning","collection","social-media"]
+dataset_keys = ["lms","credit-decisioning","collection","location"]
 for key in dataset_keys:
   if key not in st.session_state :
     st.session_state[key] = False
@@ -109,6 +109,7 @@ def gpt_helper(query:str,context:str) -> str:
 # context = ""
 # output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: 
 # {str(context)}"""
+
 
 # #====reading all my datasets========
 
@@ -253,13 +254,12 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   total = credit_decisioning_lms_df['user_id'].nunique()
   non_ntc_count = total - ntc_count
   ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
-  non_ntc_npa = ntc_npa['defaulted_amount'].sum()/ntc_npa['loan_amount'].sum()
+  non_ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
   avg_bureau_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 1][bureau_score_col].mean()
   avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
-  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1].mean()
-  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0].mean()
+  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == "1"].mean()
+  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == "0"].mean()
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
-
   example_context1 = {'ntc_count' : 100, 'non_ntc_count' : 200, 'ntc_npa' : 0.12,'non_ntc_npa' : 0.04, 'total_users' : 300, 'avg_bureau_defaulters' : 500, 'avg_bureau_non_defaulters' : 750, 'avg_ticket_siZe_defaulters': 1000, 'avg_ticket_siZe_non_defaulters' : 1500}
   example_context2 = {'ntc_count' : 1000, 'non_ntc_count' : 2000, 'ntc_npa' : 0.22,'non_ntc_npa' : 0.14, 'total_users' : 3000, 'avg_bureau_defaulters' : 550, 'avg_bureau_non_defaulters' : 725, 'avg_ticket_siZe_defaulters': 1200, 'avg_ticket_siZe_non_defaulters' : 1700}
   responsePrompt = f"""
@@ -357,12 +357,15 @@ def evaluate_data_source():
   Here top_fts has a list of top 10 features.
   """
   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-  external_data = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/social-media_data.csv")
-  lms_df = pd.read_csv("/Users/arihantbarjatya/Documents/finwin/lms_data.csv")
-  external_data_lms_df = pd.merge(external_data, lms_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
-  labels = external_data_lms_df["is_default"]
-  external_data_lms_df.drop(["is_default"],axis=1,inplace=True)
-  top_fts = calculate_feature_importance(external_data_lms_df,labels)
+  dataset_idx=[3]
+  for idx in dataset_idx:
+    if st.session_state[dataset_keys[idx]] == False:
+      return "Sufficient data not available !, please provide all the required data."
+  external_data = pd.read_csv("location_data.csv")
+  external_data.dropna(inplace=True)
+  labels = external_data["dep_var"]
+  external_data.drop(["dep_var","address"],axis=1,inplace=True)
+  top_fts = calculate_top_features(external_data,labels)
   #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
   return top_fts
 
@@ -372,12 +375,12 @@ def evaluate_data_source():
 RiskProfileTool = FunctionTool.from_defaults(fn=risk_profiling)
 RiskMetricsTool = FunctionTool.from_defaults(fn=calculate_risk_metrics)
 BureauMetricsTool = FunctionTool.from_defaults(fn=calculate_bureau_metrics)
-#EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
+EvaluateDataTool = FunctionTool.from_defaults(fn=evaluate_data_source)
 
 
 
 #Tools Llamaindex
-llamaTools = [RiskMetricsTool,RiskProfileTool, BureauMetricsTool]
+llamaTools = [RiskMetricsTool,RiskProfileTool, BureauMetricsTool,EvaluateDataTool]
 agentLlama = OpenAIAgent.from_tools(llamaTools)
 
 
