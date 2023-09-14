@@ -143,8 +143,8 @@ def pick_data_set(prompt : str , master_col_dict : dict)-> str:
       if(score > 0.7):
         dataset_name = key
         col_name = col
-	capture_message(f"The dataset name is {dataset_name}")
-	capture_message(f"The column name is {col_name}")
+	    capture_message(f"The dataset name is {dataset_name}")
+	    capture_message(f"The column name is {col_name}")
         break
   return dataset_name, col_name
 
@@ -479,6 +479,3 @@ if st.session_state.generate:
 				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
 			with relevantCol3:
 				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
-
-
-
