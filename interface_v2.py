@@ -390,12 +390,12 @@ with st.sidebar:
 
 
 
-  COLLECTION_DATA = st.file_uploader("COLLECTION_DATA",type="csv",key="data_3")
-  if COLLECTION_DATA is not None:
-    collection_path = "collection_data.csv"
-    with st.spinner("Uploading"):
-      st.session_state["collection"] = True
-      pd.read_csv(COLLECTION_DATA).to_csv(collection_path)
+  # COLLECTION_DATA = st.file_uploader("COLLECTION_DATA",type="csv",key="data_3")
+  # if COLLECTION_DATA is not None:
+  #   collection_path = "collection_data.csv"
+  #   with st.spinner("Uploading"):
+  #     st.session_state["collection"] = True
+  #     pd.read_csv(COLLECTION_DATA).to_csv(collection_path)
 
 
 
