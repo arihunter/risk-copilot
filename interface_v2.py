@@ -402,7 +402,6 @@ def UploadedFileCallback(displayText:str):
 
 with st.sidebar:
   DatasetOption = st.selectbox("Choose the Dataset",("LMS","Credit-Decisioning","Collection","Location"))
-  time.sleep(2)
   #Data Upload
   if st.session_state[str(DatasetOption.lower())] == True:
     st.warning("Uploading now will update the dataset")
