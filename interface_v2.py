@@ -258,11 +258,11 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   total = credit_decisioning_lms_df['user_id'].nunique()
   non_ntc_count = total - ntc_count
   ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
-  non_ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
+  non_ntc_npa = non_ntc_df['defaulted_amount'].sum()/non_ntc_df['loan_amount'].sum()
   avg_bureau_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 1][bureau_score_col].mean()
   avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
-  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == "1"].mean()
-  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == "0"].mean()
+  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1]['loan_amount'].mean()
+  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0]['loan_amount'].mean()
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
   responsePrompt = output_formatting_prompt 
   responsePrompt += "\n" + str(context)
