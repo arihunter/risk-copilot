@@ -84,7 +84,7 @@ if "query" not in st.session_state.keys():
   st.session_state.query = ""
 
 
-dataset_keys = ["lms","credit-decisioning","collection","location"]
+dataset_keys = ["lms","credit-decisioning","location"]
 for key in dataset_keys:
   if key not in st.session_state :
     st.session_state[key] = False
@@ -237,6 +237,7 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
       avg_bureau_non_defaulters is the average bureau scores of non-defaulters
       avg_ticket_siZe_defaulters is the average loan ticket siZe of defaulters
       avg_ticket_siZe_non_defaulters is the average loan ticket siZe of non-defaulters"""
+  
   dataset_idx=[0,1]
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
@@ -337,7 +338,7 @@ def evaluate_data_source():
   Here top_fts has a list of top 10 features.
   """
   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-  dataset_idx=[3]
+  dataset_idx=[2]
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
       return "Sufficient data not available !, please provide all the required data."
