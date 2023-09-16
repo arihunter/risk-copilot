@@ -186,7 +186,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
 
   lms_df = pd.read_csv("lms_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
@@ -245,7 +245,7 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   
   lms_df = pd.read_csv("lms_data.csv")
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
@@ -298,7 +298,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   dataset_name, col_name = pick_data_set(prompt)
   dataset_df = master_df_dict[dataset_name] #======how to handle this @Arihant??======
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
