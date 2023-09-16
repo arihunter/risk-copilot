@@ -345,7 +345,7 @@ def evaluate_data_source():
   external_data = pd.read_csv("location_data.csv")
   external_data.dropna(inplace=True)
   labels = external_data["dep_var"]
-  external_data.drop(["dep_var","address"],axis=1,inplace=True)
+  external_data.drop(["dep_var","address", "installments_due_latest_y"],axis=1,inplace=True)
   top_fts = calculate_top_features(external_data,labels)
   #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
   return top_fts
