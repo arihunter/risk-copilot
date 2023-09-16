@@ -30,6 +30,7 @@ from sentry_sdk import set_level
 from sentry_sdk import capture_message
 import globals_
 import streamlit as st
+import os 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -40,7 +41,7 @@ def before_send(event, hint):
     return event
 
 sentry_sdk.init(
-    dsn=st.secrets["SENTRY_DSN"],
+    dsn=os.environ.get("SENTRY_DSN"),
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
