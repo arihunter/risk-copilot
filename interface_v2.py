@@ -114,14 +114,14 @@ location_df = pd.read_csv("location_data.csv")
 master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
 master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
 
-def pick_data_set(prompt : str)-> str:
+def pick_data_set(prompt : str , master_col_dict : dict)-> str:
   pick_data_set_prompt = """
   I will provide you with a user query, you have to analyse the query carefully and identify the feature name mentioned in the query. 
   If you're able to identify a feature from the user query you have to respond with the feature name else NO.
   Here are some examples for you.
 
   Example 1:
-  Query: do the risk profiling of my portfolio using the bureau score
+  Query: do the risk profiling of my portfolio using the bureau score for financial year 2021
   Response: bureau score
 
   Example 2:
@@ -264,11 +264,29 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1]['loan_amount'].mean()
   avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0]['loan_amount'].mean()
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
-  responsePrompt = output_formatting_prompt 
-  responsePrompt += "\n" + str(context)
+  example_context1 = {'ntc_count' : 100, 'non_ntc_count' : 200, 'ntc_npa' : 0.12,'non_ntc_npa' : 0.04, 'total_users' : 300, 'avg_bureau_defaulters' : 500, 'avg_bureau_non_defaulters' : 750, 'avg_ticket_siZe_defaulters': 1000, 'avg_ticket_siZe_non_defaulters' : 1500}
+  example_context2 = {'ntc_count' : 1000, 'non_ntc_count' : 2000, 'ntc_npa' : 0.22,'non_ntc_npa' : 0.14, 'total_users' : 3000, 'avg_bureau_defaulters' : 550, 'avg_bureau_non_defaulters' : 725, 'avg_ticket_siZe_defaulters': 1200, 'avg_ticket_siZe_non_defaulters' : 1700}
+  responsePrompt = f"""
+  I need you to answer the users query using the given context. 
+  The response to the query is certain to be in the context.
+  Go carefully through the query and context and just return the answer, nothing else.
+  Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. 
+  Here are some examples for you.
+  Example 1:
+  Context : {example_context1}
+  Query: "Calculate the NTC count for third financial quarter of 2021"
+  Response: The NTC count for the third financial quarter of 2021 is 1000.
+  Example 2:
+  Context : {example_context2}
+  Query : "Calculate the average bureau score of non-defaulters for first financial quarter of 2022"
+  Response: The average bureau score of non-defaulters for first financial quarter of 2022 is 725
+  Now using the given context answer the query.
+  Context:
+  {str(context)}
+  """
   capture_message(f"The values calculated are {context}")
-  response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
+  response = gpt_helper(prompt,responsePrompt)
   capture_message(f"The values calculated are {response}")
   return str(response)
 
@@ -288,25 +306,28 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
       return "Sufficient data not available !, please provide all the required data."
+  lms_df = pd.read_csv("lms_data.csv")
+  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  location_df = pd.read_csv("location_data.csv")
+  master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
+  master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
+  #picking the dataset given the prompt=========
+  dataset_name, col_name = pick_data_set(prompt, master_col_dict)
   #sanity check
   dateCheckPrompt = "I will provide you with a user query, you have to analyse the query carefully and identify if there is a time period mentioned in the query. You have to respond only with YES or NO depending on the query."
   dateCheck = gpt_helper(prompt,dateCheckPrompt)
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
-  lms_df = pd.read_csv("lms_data.csv")
-  #===picking the dataset given the prompt=========
-  dataset_name, col_name = pick_data_set(prompt)
-  dataset_df = master_df_dict[dataset_name] #======how to handle this @Arihant??======
-  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  dataset_df = master_df_dict[dataset_name]
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
-  credit_decisioning_df = credit_decisioning_df.drop_duplicates()
-  credit_decisioning_lms_df = pd.merge(lms_df_filtered, credit_decisioning_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
-  credit_decisioning_lms_df = bin_df(credit_decisioning_lms_df, col_name, 5)
+  dataset_df = dataset_df.drop_duplicates()
+  dataset_lms_df = pd.merge(lms_df_filtered, dataset_df, left_on = ["user_id"], right_on = ["user_id"], how = "left")
+  dataset_lms_df = bin_df(dataset_lms_df, col_name, 5)
   col_group_name = col_name + "_groups"
-  grouped_df = credit_decisioning_lms_df.groupby(col_group_name, dropna = False).agg({'user_id' : 'count','defaulted_amount' : 'sum', 'loan_amount' : 'sum'}).reset_index()
+  grouped_df = dataset_lms_df.groupby(col_group_name, dropna = False).agg({'user_id' : 'count','defaulted_amount' : 'sum', 'loan_amount' : 'sum'}).reset_index()
   grouped_df["npa"] = grouped_df["defaulted_amount"]/ grouped_df["loan_amount"]
   grouped_df["fraction_of_users"] = grouped_df["user_id"]/grouped_df["user_id"].sum()
   return grouped_df.to_string()
