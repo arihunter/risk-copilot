@@ -20,7 +20,9 @@ from sentry_sdk import capture_message
 import uuid
 import globals_
 from difflib import SequenceMatcher
+from dotenv import load_dotenv 
 
+load_dotenv()
 
 #Global Variables 
 
