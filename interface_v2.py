@@ -81,7 +81,13 @@ if "generate" not in st.session_state.keys():
 	st.session_state.generate = False
 
 if "query" not in st.session_state.keys():
-  st.session_state.query = ""
+	st.session_state.query = ""
+
+if "response" not in st.session_state.keys():
+	st.session_state.response = ""
+
+if "prompt" not in st.session_state.keys():
+	st.session_state.prompt = ""
 
 
 dataset_keys = ["lms","credit-decisioning","location"]
@@ -466,6 +472,11 @@ def ClearCallback():
   st.session_state.thumbs = True
 
 
+def BestPromptsCallback(query:str):
+  st.session_state.prompt = query
+  st.session_state.generate = True
+  st.session_state.query = query
+
 @st.cache_resource(show_spinner=False)
 def get_response(query:str) -> str:
   response = agentLlama.chat(query)
@@ -473,6 +484,7 @@ def get_response(query:str) -> str:
 
 global prompt
 prompt = st.text_area("Enter Here",key="query")
+st.session_state.prompt = str(prompt)
 col1,col2,col3 = st.columns([3,2,1],gap="large")
 with col1:
   clear = st.button("Clear",on_click=ClearCallback,type="primary")
@@ -482,20 +494,24 @@ with col3:
   
 st.markdown("")
 if st.session_state.generate:
-	ResponseToDisplay = ""
 	with st.status("Generating your response") as status:
-		response = get_response(str(prompt))
+		response = get_response(st.session_state.prompt)
+		st.session_state.response = response
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
-	ResponseToDisplay = response
-	st.write(f'<font size="4">{ResponseToDisplay}</i>',unsafe_allow_html=True)
+	st.write(f'<font size="4">{st.session_state.response}</font>',unsafe_allow_html=True)
 	with placeholder.container():
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		if (st.session_state.thumbs == False):
 			with relevantCol2:
 				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
 			with relevantCol3:
-				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
+				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)		
 
 
-
+if st.session_state.generate == False:
+  BestPrompts = ["What are the best features in my dataset to create a good underwriting model?","could you help me find the top 10 features from the location data which will impact my portfolio?","What was the NPA for the third financial quarter of 2022?"]
+  col1,col2,col3 = st.columns([0.3,0.3,0.4])
+  col1.button(BestPrompts[0],on_click=BestPromptsCallback,args=[BestPrompts[0]])
+  col2.button(BestPrompts[1],on_click=BestPromptsCallback,args=[BestPrompts[1]])
+  col3.button(BestPrompts[2],on_click=BestPromptsCallback,args=[BestPrompts[2]])
