@@ -481,11 +481,13 @@ with col3:
   
 st.markdown("")
 if st.session_state.generate:
+	ResponseToDisplay = ""
 	with st.status("Generating your response") as status:
 		response = get_response(str(prompt))
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
-	st.write(f'<font size="4">{response}</i>',unsafe_allow_html=True)
+	ResponseToDisplay = response
+	st.write(f'<font size="4">{ResponseToDisplay}</i>',unsafe_allow_html=True)
 	with placeholder.container():
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		if (st.session_state.thumbs == False):
