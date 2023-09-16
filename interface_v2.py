@@ -33,7 +33,7 @@ def before_send(event, hint):
     return event
 
 sentry_sdk.init(
-    dsn=os.environ.get("SENTRY_DSN"),  # Changed st secrets to os.environ.get
+    dsn=os.getenv("SENTRY_DSN"),  # Changed st secrets to os.getenv
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
@@ -47,13 +47,13 @@ sentry_sdk.init(
 
 set_level("info")
 
-openai.api_key = os.environ.get("OPENAI_API_KEY") 
+openai.api_key = os.getenv("OPENAI_API_KEY") 
 
 @st.cache_resource(show_spinner=False)
 def gsheets_connection():
-  credentials = service_account.Credentials.from_service_account_info(os.environ.get("gcp_service_account"),scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
+  credentials = service_account.Credentials.from_service_account_info(os.getenv("gcp_service_account"),scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
   gc = gspread.authorize(credentials)
-  sheet_url = os.environ.get("private_gsheets_url")
+  sheet_url = os.getenv("private_gsheets_url")
   sheet = gc.open_by_url(sheet_url)
   return sheet
 feedbackSheet = gsheets_connection()
