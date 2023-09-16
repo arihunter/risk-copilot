@@ -6,7 +6,7 @@ from langchain.chat_models import ChatOpenAI
 from llama_index.tools.function_tool import FunctionTool
 import pandas as pd
 import dateutil.parser as dparser
-import os, json 
+import os
 from typing import List
 from google.oauth2 import service_account
 import gspread
@@ -20,9 +20,7 @@ from sentry_sdk import capture_message
 import uuid
 import globals_
 from difflib import SequenceMatcher
-from dotenv import load_dotenv 
 
-load_dotenv()
 
 #Global Variables 
 
@@ -35,7 +33,7 @@ def before_send(event, hint):
     return event
 
 sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),  # Changed st secrets to os.getenv
+    dsn=st.secrets["SENTRY_DSN"],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
@@ -49,14 +47,13 @@ sentry_sdk.init(
 
 set_level("info")
 
-openai.api_key = os.getenv("OPENAI_API_KEY") 
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 @st.cache_resource(show_spinner=False)
 def gsheets_connection():
-  service_account_info = json.load(open('service_account.json'))
-  credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
+  credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"],scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
   gc = gspread.authorize(credentials)
-  sheet_url = os.getenv("private_gsheets_url")
+  sheet_url = st.secrets["private_gsheets_url"]
   sheet = gc.open_by_url(sheet_url)
   return sheet
 feedbackSheet = gsheets_connection()
@@ -87,7 +84,7 @@ if "query" not in st.session_state.keys():
   st.session_state.query = ""
 
 
-dataset_keys = ["lms","credit-decisioning","collection","location"]
+dataset_keys = ["lms","credit-decisioning","location"]
 for key in dataset_keys:
   if key not in st.session_state :
     st.session_state[key] = False
@@ -189,7 +186,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
 
   lms_df = pd.read_csv("lms_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
@@ -240,6 +237,7 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
       avg_bureau_non_defaulters is the average bureau scores of non-defaulters
       avg_ticket_siZe_defaulters is the average loan ticket siZe of defaulters
       avg_ticket_siZe_non_defaulters is the average loan ticket siZe of non-defaulters"""
+  
   dataset_idx=[0,1]
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
@@ -247,7 +245,7 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   
   lms_df = pd.read_csv("lms_data.csv")
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
@@ -260,11 +258,11 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   total = credit_decisioning_lms_df['user_id'].nunique()
   non_ntc_count = total - ntc_count
   ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
-  non_ntc_npa = ntc_df['defaulted_amount'].sum()/ntc_df['loan_amount'].sum()
+  non_ntc_npa = non_ntc_df['defaulted_amount'].sum()/non_ntc_df['loan_amount'].sum()
   avg_bureau_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 1][bureau_score_col].mean()
   avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
-  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == "1"].mean()
-  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == "0"].mean()
+  avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1]['loan_amount'].mean()
+  avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0]['loan_amount'].mean()
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
   responsePrompt = output_formatting_prompt 
   responsePrompt += "\n" + str(context)
@@ -300,7 +298,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   dataset_name, col_name = pick_data_set(prompt)
   dataset_df = master_df_dict[dataset_name] #======how to handle this @Arihant??======
   credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x, dayfirst=True))
+  lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
   lms_df_filtered["defaulted_amount"] = lms_df_filtered["is_default"] * lms_df_filtered["loan_amount"]
@@ -340,7 +338,7 @@ def evaluate_data_source():
   Here top_fts has a list of top 10 features.
   """
   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-  dataset_idx=[3]
+  dataset_idx=[2]
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
       return "Sufficient data not available !, please provide all the required data."
@@ -484,11 +482,13 @@ with col3:
   
 st.markdown("")
 if st.session_state.generate:
+	ResponseToDisplay = ""
 	with st.status("Generating your response") as status:
 		response = get_response(str(prompt))
 		status.update(label="Done",state="complete")
 	placeholder = st.empty()
-	st.write(f'<font size="4">{response}</i>',unsafe_allow_html=True)
+	ResponseToDisplay = response
+	st.write(f'<font size="4">{ResponseToDisplay}</i>',unsafe_allow_html=True)
 	with placeholder.container():
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
 		if (st.session_state.thumbs == False):
@@ -496,6 +496,3 @@ if st.session_state.generate:
 				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
 			with relevantCol3:
 				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
-
-
-
