@@ -135,7 +135,7 @@ def pick_data_set(prompt : str , master_col_dict : dict)-> str:
   if col_name_extracted == "NO":
     return "There was insufficent information to do the analysis. Ask the user to give feature name in the query. Do not make up any random metrics by yourself"
   for key in master_col_dict:
-    col_list = master_col_dict[key]
+    col_list = master_col_dict['key']
     for col in col_list:
       score = SequenceMatcher(None, col_name_extracted, col).ratio()
       if(score > 0.7):
@@ -475,6 +475,3 @@ if st.session_state.generate:
 				st.button(":thumbsup:",on_click=ResponseCallback,args=([str(prompt),str(response),"POSITIVE"]),disabled=False)
 			with relevantCol3:
 				st.button(":thumbsdown:",on_click=ResponseCallback,args=([str(prompt),str(response),"NEGATIVE"]),disabled=False)	
-
-
-
