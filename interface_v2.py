@@ -288,9 +288,8 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   {str(context)}
   """
   capture_message(f"The values calculated are {context}")
-  capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   response = gpt_helper(prompt,responsePrompt)
-  capture_message(f"The values calculated are {response}")
+  capture_message(f"Gpt helper response for risk metric function output formatting {response}")
   return str(response)
 
 def bin_df(df:pd.DataFrame,col_name:str,number_of_bins:int=5) -> pd.DataFrame:
