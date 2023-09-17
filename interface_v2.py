@@ -498,7 +498,7 @@ with col3:
   
 st.markdown("")
 if st.session_state.generate:
-	with st.status("Generating your response",expanded=False) as status:
+	with st.status("Generating response") as status:
 		response = get_response(st.session_state.prompt)
 		st.session_state.response = response
 		for item in st.session_state.citations:
