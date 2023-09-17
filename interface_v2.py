@@ -504,6 +504,7 @@ if st.session_state.generate:
 		for item in st.session_state.citations:
 			st.write(item)
 		status.update(label="How was the response generated?",expanded=True)
+	placeholder = st.empty()
 	st.write(f'<font size="4">{st.session_state.response}</font>',unsafe_allow_html=True)
 	with placeholder.container():
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
