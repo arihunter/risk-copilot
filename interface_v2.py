@@ -6,7 +6,7 @@ from langchain.chat_models import ChatOpenAI
 from llama_index.tools.function_tool import FunctionTool
 import pandas as pd
 import dateutil.parser as dparser
-import os
+import os, json
 from typing import List
 from google.oauth2 import service_account
 import gspread
@@ -53,7 +53,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @st.cache_resource(show_spinner=False)
 def gsheets_connection():
-  credentials = service_account.Credentials.from_service_account_info(os.getenv("gcp_service_account"),scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
+  service_account_info = json.load(open('service_account.json'))
+  credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=["https://www.googleapis.com/auth/spreadsheets","https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
   gc = gspread.authorize(credentials)
   sheet_url = os.getenv("private_gsheets_url")
   sheet = gc.open_by_url(sheet_url)
