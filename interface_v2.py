@@ -111,10 +111,10 @@ def gpt_helper(query:str,context:str) -> str:
 output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: \n"""
 
 # #====reading all my datasets========
-credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-location_df = pd.read_csv("location_data.csv")
-master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
-master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
+# credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+# location_df = pd.read_csv("location_data.csv")
+# master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
+# master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
 
 def pick_data_set(prompt : str , master_col_dict : dict)-> str:
   pick_data_set_prompt = """
@@ -304,7 +304,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   """
   # start_dt = st.text_input("Start Date")
   # end_dt = st.text_input("End Date")
-  dataset_idx=[0,1]
+  dataset_idx=[0,1,2]
   for idx in dataset_idx:
     if st.session_state[dataset_keys[idx]] == False:
       return "Sufficient data not available !, please provide all the required data."
