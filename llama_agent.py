@@ -31,6 +31,8 @@ from sentry_sdk import capture_message
 import globals_
 import streamlit as st
 
+
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
@@ -73,6 +75,7 @@ def call_function(
 ) -> Tuple[ChatMessage, ToolOutput]:
     """Call a function and return the output as a string."""
     name = function_call["name"]
+    citations.append(name)
     arguments_str = function_call["arguments"]
     if verbose:
         print("=== Calling Function ===")
@@ -308,7 +311,9 @@ class BaseOpenAIAgent(BaseAgent):
         chat_history: Optional[List[ChatMessage]] = None,
         function_call: Union[str, dict] = "auto",
         mode: ChatResponseMode = ChatResponseMode.WAIT,
-    ) -> AGENT_CHAT_RESPONSE_TYPE:
+    ) -> Union[AGENT_CHAT_RESPONSE_TYPE,List]:
+        global citations 
+        citations = []
         tools, functions = self.init_chat(message, chat_history)
         n_function_calls = 0
 
@@ -330,7 +335,7 @@ class BaseOpenAIAgent(BaseAgent):
             n_function_calls += 1
         capture_message(f"Response Generated after {n_function_calls} function calls.")
         self.reset()
-        return agent_chat_response
+        return agent_chat_response,citations
 
     async def _achat(
         self,
@@ -367,12 +372,12 @@ class BaseOpenAIAgent(BaseAgent):
         message: str,
         chat_history: Optional[List[ChatMessage]] = None,
         function_call: Union[str, dict] = "auto",
-    ) -> AgentChatResponse:
-        chat_response = self._chat(
+    ) -> Union[AGENT_CHAT_RESPONSE_TYPE,List]:
+        chat_response, citations = self._chat(
             message, chat_history, function_call, mode=ChatResponseMode.WAIT
         )
         assert isinstance(chat_response, AgentChatResponse)
-        return chat_response
+        return chat_response, citations
 
     @trace_method("chat")
     async def achat(
