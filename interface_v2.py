@@ -89,6 +89,8 @@ if "response" not in st.session_state.keys():
 if "prompt" not in st.session_state.keys():
 	st.session_state.prompt = ""
 
+if "citations" not in st.session_state.keys():
+	st.session_state.citations = []
 
 dataset_keys = ["lms","credit-decisioning","location"]
 for key in dataset_keys:
@@ -479,8 +481,10 @@ def BestPromptsCallback(query:str):
 
 @st.cache_resource(show_spinner=False)
 def get_response(query:str) -> str:
-  response = agentLlama.chat(query)
+  response,citations = agentLlama.chat(query)
+  st.session_state.citations = citations
   return str(response)
+
 
 global prompt
 prompt = st.text_area("Enter Here",key="query")
@@ -494,11 +498,12 @@ with col3:
   
 st.markdown("")
 if st.session_state.generate:
-	with st.status("Generating your response") as status:
+	with st.status("Generating your response",expanded=False) as status:
 		response = get_response(st.session_state.prompt)
 		st.session_state.response = response
-		status.update(label="Done",state="complete")
-	placeholder = st.empty()
+		for item in st.session_state.citations:
+			st.write(item)
+    		status.update(label="How was the response generated?",expanded=True)
 	st.write(f'<font size="4">{st.session_state.response}</font>',unsafe_allow_html=True)
 	with placeholder.container():
 		relevantCol1,relevantCol2,relevantCol3 = st.columns([0.8,0.1,0.1])
