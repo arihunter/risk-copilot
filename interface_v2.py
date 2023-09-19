@@ -52,7 +52,7 @@ def read_static_csv_from_s3(
 
     ## Reading the csv file from s3 
     obj = s3.Bucket(bucket_name).Object(f'{folder_name}/{file_name}').get()
-    foo = pd.read_csv(obj['Body'], index_col=0)
+    foo = (obj['Body'], index_col=0)
 
     return foo
 
@@ -214,10 +214,10 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   NPA(non-performing asset) which is defined as the percentage of disbursed amount which is due or defaulted.
 
   """
-  dataset_idx=[0]
-  for idx in dataset_idx:
-    if st.session_state[dataset_keys[idx]] == False:
-      return "Sufficient data not available !, please provide all the required data."
+  # dataset_idx=[0]
+  # for idx in dataset_idx:
+  #   if st.session_state[dataset_keys[idx]] == False:
+  #     return "Sufficient data not available !, please provide all the required data."
 
 
   # input health check
@@ -243,7 +243,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
 
-  lms_df = pd.read_csv("lms_data.csv")
+  # lms_df = pd.read_csv("lms_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -296,13 +296,13 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
       avg_ticket_siZe_defaulters is the average loan ticket siZe of defaulters
       avg_ticket_siZe_non_defaulters is the average loan ticket siZe of non-defaulters"""
   
-  dataset_idx=[0,1]
-  for idx in dataset_idx:
-    if st.session_state[dataset_keys[idx]] == False:
-      return "Sufficient data not available !, please provide all the required data."
+  # dataset_idx=[0,1]
+  # for idx in dataset_idx:
+  #   if st.session_state[dataset_keys[idx]] == False:
+  #     return "Sufficient data not available !, please provide all the required data."
   
-  lms_df = pd.read_csv("lms_data.csv")
-  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  # lms_df = pd.read_csv("lms_data.csv")
+  # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -359,13 +359,13 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   """
   # start_dt = st.text_input("Start Date")
   # end_dt = st.text_input("End Date")
-  dataset_idx=[0,1,2]
-  for idx in dataset_idx:
-    if st.session_state[dataset_keys[idx]] == False:
-      return "Sufficient data not available !, please provide all the required data."
-  lms_df = pd.read_csv("lms_data.csv")
-  credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  location_df = pd.read_csv("location_data.csv")
+  # dataset_idx=[0,1,2]
+  # for idx in dataset_idx:
+  #   if st.session_state[dataset_keys[idx]] == False:
+  #     return "Sufficient data not available !, please provide all the required data."
+  # lms_df = pd.read_csv("lms_data.csv")
+  # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  # location_df = pd.read_csv("location_data.csv")
   master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
   master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
   #picking the dataset given the prompt=========
@@ -416,11 +416,12 @@ def evaluate_data_source():
   Here top_fts has a list of top 10 features.
   """
   #hardcoding external data source here @Arihant - please make the change for the user to i/p the data source
-  dataset_idx=[2]
-  for idx in dataset_idx:
-    if st.session_state[dataset_keys[idx]] == False:
-      return "Sufficient data not available !, please provide all the required data."
-  external_data = pd.read_csv("location_data.csv")
+  # dataset_idx=[2]
+  # for idx in dataset_idx:
+  #   if st.session_state[dataset_keys[idx]] == False:
+  #     return "Sufficient data not available !, please provide all the required data."
+  # external_data = pd.read_csv("location_data.csv")
+  external_data = location_df 
   external_data.dropna(inplace=True)
   labels = external_data["dep_var"]
   external_data.drop(["dep_var","address", "installments_due_latest_y"],axis=1,inplace=True)
@@ -449,41 +450,41 @@ agentLlama = OpenAIAgent.from_tools(llamaTools)
 def UploadedFileCallback(displayText:str):
   print(displayText)
 
-with st.sidebar:
+# with st.sidebar:
 
-  #lms data
-  LMS_DATA = st.file_uploader("LMS_DATA",type="csv",key="data_1")
-  if LMS_DATA is not None:
-    lms_path = "lms_data.csv"
-    with st.spinner("Uploading"):
-      st.session_state["lms"] = True
-      pd.read_csv(LMS_DATA).to_csv(lms_path)
-
-
-  CREDIT_DECISIONING_DATA = st.file_uploader("BUREAU_DATA",type="csv",key="data_2")
-  if CREDIT_DECISIONING_DATA is not None:
-    bureau_path = "credit-decisioning_data.csv"
-    with st.spinner("Uploading"):
-      st.session_state["credit-decisioning"] = True
-      pd.read_csv(CREDIT_DECISIONING_DATA).to_csv(bureau_path)
+#   #lms data
+#   LMS_DATA = st.file_uploader("LMS_DATA",type="csv",key="data_1")
+#   if LMS_DATA is not None:
+#     lms_path = "lms_data.csv"
+#     with st.spinner("Uploading"):
+#       st.session_state["lms"] = True
+#       pd.read_csv(LMS_DATA).to_csv(lms_path)
 
 
-
-  # COLLECTION_DATA = st.file_uploader("COLLECTION_DATA",type="csv",key="data_3")
-  # if COLLECTION_DATA is not None:
-  #   collection_path = "collection_data.csv"
-  #   with st.spinner("Uploading"):
-  #     st.session_state["collection"] = True
-  #     pd.read_csv(COLLECTION_DATA).to_csv(collection_path)
+#   CREDIT_DECISIONING_DATA = st.file_uploader("BUREAU_DATA",type="csv",key="data_2")
+#   if CREDIT_DECISIONING_DATA is not None:
+#     bureau_path = "credit-decisioning_data.csv"
+#     with st.spinner("Uploading"):
+#       st.session_state["credit-decisioning"] = True
+#       pd.read_csv(CREDIT_DECISIONING_DATA).to_csv(bureau_path)
 
 
 
-  LOCATION_DATA = st.file_uploader("LOCATION_DATA",type="csv",key="data_4")
-  if LOCATION_DATA is not None:
-    location_path = "location_data.csv"
-    with st.spinner("Uploading"):
-      st.session_state["location"] = True
-      pd.read_csv(LOCATION_DATA).to_csv(location_path)
+#   # COLLECTION_DATA = st.file_uploader("COLLECTION_DATA",type="csv",key="data_3")
+#   # if COLLECTION_DATA is not None:
+#   #   collection_path = "collection_data.csv"
+#   #   with st.spinner("Uploading"):
+#   #     st.session_state["collection"] = True
+#   #     pd.read_csv(COLLECTION_DATA).to_csv(collection_path)
+
+
+
+#   LOCATION_DATA = st.file_uploader("LOCATION_DATA",type="csv",key="data_4")
+#   if LOCATION_DATA is not None:
+#     location_path = "location_data.csv"
+#     with st.spinner("Uploading"):
+#       st.session_state["location"] = True
+#       pd.read_csv(LOCATION_DATA).to_csv(location_path)
 
 
 
