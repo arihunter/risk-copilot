@@ -219,7 +219,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   #   if st.session_state[dataset_keys[idx]] == False:
   #     return "Sufficient data not available !, please provide all the required data."
 
-
+  global lms_df 
   # input health check
   dateCheckPrompt = """
   I will provide you with a user query, you have to analyse the query carefully and identify if there is a complete time period mentioned in the query. 
@@ -303,6 +303,7 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   
   # lms_df = pd.read_csv("lms_data.csv")
   # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
+  global lms_df, credit_decisioning_df 
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -366,6 +367,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   # lms_df = pd.read_csv("lms_data.csv")
   # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   # location_df = pd.read_csv("location_data.csv")
+  global lms_df, credit_decisioning_df, location_df 
   master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
   master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
   #picking the dataset given the prompt=========
@@ -421,6 +423,7 @@ def evaluate_data_source():
   #   if st.session_state[dataset_keys[idx]] == False:
   #     return "Sufficient data not available !, please provide all the required data."
   # external_data = pd.read_csv("location_data.csv")
+  global location_df 
   external_data = location_df 
   external_data.dropna(inplace=True)
   labels = external_data["dep_var"]
