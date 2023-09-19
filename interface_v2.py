@@ -52,7 +52,7 @@ def read_static_csv_from_s3(
 
     ## Reading the csv file from s3 
     obj = s3.Bucket(bucket_name).Object(f'{folder_name}/{file_name}').get()
-    foo = (obj['Body'], index_col=0)
+    foo = pd.read_csv(obj['Body'], index_col=0)
 
     return foo
 
