@@ -56,6 +56,16 @@ def read_static_csv_from_s3(
 
     return foo
 
+def csv_giver(name:str) -> pd.DataFrame: 
+
+  region_name=os.getenv("S3_STATIC_FILE_READING_REGION_NAME") 
+  aws_access_key_id=os.getenv("S3_STATIC_FILE_READING_ACCESS_KEY")
+  aws_secret_access_key=os.getenv("S3_STATIC_FILE_READING_SECRET_KEY")
+  bucket_name=os.getenv("S3_STATIC_FILE_READING_BUCKET_NAME")
+  folder_name=os.getenv("S3_STATIC_FILE_READING_FOLDER_NAME")
+
+
+  return read_static_csv_from_s3(name, region_name, aws_access_key_id, aws_secret_access_key, bucket_name, folder_name)
 
 def make_csv_files_global() -> None: 
   """ 
@@ -81,12 +91,13 @@ def make_csv_files_global() -> None:
 
   print("CSV made globally accessible")
 
-make_csv_files_global()
+# make_csv_files_global()
 
 
 def before_send(event, hint):
     #print(globals_.chat_id)
     event['fingerprint'] = ["logging"]
+
     return event
 
 sentry_sdk.init(
@@ -103,8 +114,8 @@ sentry_sdk.init(
 )
 
 set_level("info")
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 @st.cache_resource(show_spinner=False)
 def gsheets_connection():
@@ -113,7 +124,9 @@ def gsheets_connection():
   gc = gspread.authorize(credentials)
   sheet_url = os.getenv("private_gsheets_url")
   sheet = gc.open_by_url(sheet_url)
+
   return sheet
+
 feedbackSheet = gsheets_connection()
 
 st.set_page_config(page_title="Stealth")
@@ -125,6 +138,7 @@ st.divider()
 css = r'''
     <style>
         [data-testid="stForm"] {border: 0px}
+        footer {visibility: hidden;}
     </style>
 '''
 
@@ -148,9 +162,7 @@ for key in dataset_keys:
     st.session_state[key] = False
 
 
-
 # agent tools definitions
-
 def gpt_helper(query:str,context:str) -> str:
   SYSTEM_PROMPT = f"{context}"
   model_id = "gpt-4"
@@ -162,7 +174,9 @@ def gpt_helper(query:str,context:str) -> str:
     ],
     max_tokens=3000
   )
+
   return response["choices"][0]["message"]["content"]
+
 
 output_formatting_prompt = f"""I need you to answer the user's query using the given context. The response to the query is certain to be in the context. Go carefully through the query and context and just return the answer, nothing else. Dont make anything up. Dont do any calculations on your end. Do not assume any denomination for the requested metrics in the query. Now using the given context answer the query. Context: \n"""
 
@@ -172,7 +186,8 @@ output_formatting_prompt = f"""I need you to answer the user's query using the g
 # master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
 # master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
 
-def pick_data_set(prompt : str , master_col_dict : dict)-> str:
+def pick_data_set(prompt:str, master_col_dict:dict)-> str:
+
   pick_data_set_prompt = """
   I will provide you with a user query, you have to analyse the query carefully and identify the feature name mentioned in the query. 
   If you're able to identify a feature from the user query you have to respond with the feature name else NO.
@@ -193,14 +208,17 @@ def pick_data_set(prompt : str , master_col_dict : dict)-> str:
   col_name_extracted = gpt_helper(prompt,pick_data_set_prompt)
   if col_name_extracted == "NO":
     return "There was insufficent information to do the analysis. Ask the user to give feature name in the query. Do not make up any random metrics by yourself"
+
   for key in master_col_dict:
     col_list = master_col_dict[key]
+
     for col in col_list:
       score = SequenceMatcher(None, col_name_extracted, col).ratio()
       if(score > 0.7):
         dataset_name = key
         col_name = col
         break
+
   return dataset_name, col_name
 
 def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
@@ -219,7 +237,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   #   if st.session_state[dataset_keys[idx]] == False:
   #     return "Sufficient data not available !, please provide all the required data."
 
-  global lms_df 
+
   # input health check
   dateCheckPrompt = """
   I will provide you with a user query, you have to analyse the query carefully and identify if there is a complete time period mentioned in the query. 
@@ -244,6 +262,8 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
 
   # lms_df = pd.read_csv("lms_data.csv")
+
+  lms_df = csv_giver("lms_data.csv")
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -283,6 +303,7 @@ def calculate_risk_metrics(start_dt:str,end_dt:str) -> float:
   capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
+
   return response
 
 def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
@@ -303,7 +324,11 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   
   # lms_df = pd.read_csv("lms_data.csv")
   # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
-  global lms_df, credit_decisioning_df 
+  
+  lms_df = csv_giver("lms_data.csv") 
+  credit_decisioning_df = csv_giver("credit-decisioning_data.csv") 
+
+
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
   lms_df_filtered = lms_df_filtered[(lms_df_filtered['due_date']) <= dparser.parse(end_dt, dayfirst=False)]
@@ -322,9 +347,11 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   avg_bureau_non_defaulters = credit_decisioning_lms_df[credit_decisioning_lms_df['is_default'] == 0][bureau_score_col].mean()
   avg_ticket_siZe_defaulters = lms_df[lms_df['is_default'] == 1]['loan_amount'].mean()
   avg_ticket_siZe_non_defaulters = lms_df[lms_df['is_default'] == 0]['loan_amount'].mean()
+  
   context = {'ntc_count' : ntc_count, 'non_ntc_count' : non_ntc_count, 'ntc_npa' : ntc_npa,'non_ntc_npa' : non_ntc_npa, 'total_users' : total, 'avg_bureau_defaulters' : avg_bureau_defaulters, 'avg_bureau_non_defaulters' : avg_bureau_non_defaulters, 'avg_ticket_siZe_defaulters': avg_ticket_siZe_defaulters, 'avg_ticket_siZe_non_defaulters' : avg_ticket_siZe_non_defaulters}
   example_context1 = {'ntc_count' : 100, 'non_ntc_count' : 200, 'ntc_npa' : 0.12,'non_ntc_npa' : 0.04, 'total_users' : 300, 'avg_bureau_defaulters' : 500, 'avg_bureau_non_defaulters' : 750, 'avg_ticket_siZe_defaulters': 1000, 'avg_ticket_siZe_non_defaulters' : 1500}
   example_context2 = {'ntc_count' : 1000, 'non_ntc_count' : 2000, 'ntc_npa' : 0.22,'non_ntc_npa' : 0.14, 'total_users' : 3000, 'avg_bureau_defaulters' : 550, 'avg_bureau_non_defaulters' : 725, 'avg_ticket_siZe_defaulters': 1200, 'avg_ticket_siZe_non_defaulters' : 1700}
+  
   responsePrompt = f"""
   I need you to answer the users query using the given context. 
   The response to the query is certain to be in the context.
@@ -346,11 +373,13 @@ def calculate_bureau_metrics(start_dt:str,end_dt:str) -> str:
   capture_message(f"The values calculated are {context}")
   response = gpt_helper(prompt,responsePrompt)
   capture_message(f"Gpt helper response for risk metric function output formatting {response}")
+
   return str(response)
 
-def bin_df(df:pd.DataFrame,col_name:str,number_of_bins:int=5) -> pd.DataFrame:
+def bin_df(df:pd.DataFrame, col_name:str, number_of_bins:int=5) -> pd.DataFrame:
   col_group_name = col_name + "_groups"
   df[col_group_name] = pd.qcut(df[col_name], number_of_bins)
+
   return df
 
 
@@ -367,7 +396,11 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   # lms_df = pd.read_csv("lms_data.csv")
   # credit_decisioning_df = pd.read_csv("credit-decisioning_data.csv")
   # location_df = pd.read_csv("location_data.csv")
-  global lms_df, credit_decisioning_df, location_df 
+
+  lms_df = csv_giver("lms_data.csv") 
+  credit_decisioning_df = csv_giver("credit-decisioning_data.csv") 
+  location_df = csv_giver("location_data_200_features.csv") 
+
   master_df_dict = {"bureau_data" : credit_decisioning_df, "location_data" : location_df}
   master_col_dict = {"bureau_data" : credit_decisioning_df.columns, "location_data" : location_df.columns}
   #picking the dataset given the prompt=========
@@ -375,8 +408,10 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   #sanity check
   dateCheckPrompt = "I will provide you with a user query, you have to analyse the query carefully and identify if there is a time period mentioned in the query. You have to respond only with YES or NO depending on the query."
   dateCheck = gpt_helper(prompt,dateCheckPrompt)
+
   if dateCheck == "NO":
     return "There was insufficent date information to do the calculations. Ask the user to give complete date information in the query. Do not make up any random metrics by yourself."
+  
   dataset_df = master_df_dict[dataset_name]
   lms_df["due_date"] = lms_df["due_date"].apply(lambda x: dparser.parse(x.split(" ")[0], dayfirst=True))
   lms_df_filtered = lms_df[(lms_df['due_date']) >= dparser.parse(start_dt, dayfirst=False)]
@@ -389,6 +424,7 @@ def risk_profiling(start_dt:str,end_dt:str) -> str:
   grouped_df = dataset_lms_df.groupby(col_group_name, dropna = False).agg({'user_id' : 'count','defaulted_amount' : 'sum', 'loan_amount' : 'sum'}).reset_index()
   grouped_df["npa"] = grouped_df["defaulted_amount"]/ grouped_df["loan_amount"]
   grouped_df["fraction_of_users"] = grouped_df["user_id"]/grouped_df["user_id"].sum()
+
   return grouped_df.to_string()
 
 def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
@@ -396,11 +432,14 @@ def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
   gbm = ensemble.GradientBoostingRegressor()
   gbm.fit(features,labels)
   feature_importance = gbm.feature_importances_
+
   score_with_idx = [] 
   for idx,score in enumerate(feature_importance):
     score_with_idx.append((score,idx))
+
   sortedFeatures = sorted(score_with_idx)
   sortedFeatures.reverse()
+
   #===presently taking top 10 features only=====
   sortedFeatures = sortedFeatures[:num_fts]
   sortedIdx = [x[1] for x in sortedFeatures]
@@ -409,6 +448,7 @@ def calculate_top_features(external_data_lms_df, labels, num_fts = 10):
   # df_with_top_fts = features.iloc[:,sortedIdx]
   # top_fts = list(df_with_top_fts.columns)
   # print(top_fts_v1)
+
   return str(top_fts)
 
 def evaluate_data_source():
@@ -423,13 +463,14 @@ def evaluate_data_source():
   #   if st.session_state[dataset_keys[idx]] == False:
   #     return "Sufficient data not available !, please provide all the required data."
   # external_data = pd.read_csv("location_data.csv")
-  global location_df 
-  external_data = location_df 
+   
+  external_data = csv_giver("location_data_200_features.csv") 
   external_data.dropna(inplace=True)
   labels = external_data["dep_var"]
   external_data.drop(["dep_var","address", "installments_due_latest_y"],axis=1,inplace=True)
   top_fts = calculate_top_features(external_data,labels)
   #here both top_fts and response are to be processed wrt to a gpt_helper function. Here we might also need to output graphical trends
+
   return top_fts
 
 
@@ -556,6 +597,7 @@ def get_response(query:str) -> str:
 global prompt
 prompt = st.text_area("Enter Here",key="query")
 col1,col2,col3 = st.columns([3,2,1],gap="large")
+
 with col1:
   clear = st.button("Clear",on_click=ClearCallback,type="primary")
 with col3:
